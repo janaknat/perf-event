@@ -814,9 +814,8 @@ impl IntoRawFd for Counter {
 }
 
 impl Group {
-    /// Construct a new, empty `Group`.
-    #[allow(unused_parens)]
-    pub fn new() -> io::Result<Group> {
+    /// Build the `Group` for the task and cpu.
+    pub fn new_task_cpu(task: i32, cpu: i32) -> io::Result<Group> {
         // Open a placeholder perf counter that we can add other events to.
         let mut attrs = perf_event_attr {
             size: std::mem::size_of::<perf_event_attr>() as u32,
@@ -837,7 +836,7 @@ impl Group {
 
         let file = unsafe {
             File::from_raw_fd(check_errno_syscall(|| {
-                sys::perf_event_open(&mut attrs, 0, -1, -1, 0)
+                sys::perf_event_open(&mut attrs, task, cpu, -1, 0)
             })?)
         };
 
@@ -850,6 +849,12 @@ impl Group {
             id,
             max_members: 1,
         })
+    }
+
+    /// Construct a new, empty `Group`.
+    #[allow(unused_parens)]
+    pub fn new() -> io::Result<Group> {
+        Group::new_task_cpu(0, -1)
     }
 
     /// Allow all `Counter`s in this `Group` to begin counting their designated
